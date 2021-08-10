@@ -2,9 +2,8 @@ pragma solidity ^0.8.0;
 
 contract Donator {
     
+    address private tokenAddress;
     int constant public maxEntries = 100000;
-    
-    string public name;
 
     uint256 public requestsCount = 0;
     mapping(uint256 => Request) public requests;
@@ -54,8 +53,8 @@ contract Donator {
             // React to receiving ether
         }
 
-    constructor() {
-        name = "Donator";
+    constructor(address _tokenAddress) {
+        tokenAddress = _tokenAddress;
     }
 
     function uploadRequest(
