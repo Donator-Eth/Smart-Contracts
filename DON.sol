@@ -27,4 +27,8 @@ contract DON is ERC20 {
     function getBalanceOfAccount(address account) public view returns(uint256) {
         return balanceOf(account);
     }
+    
+    function transferCoinsToAddress(address recipient, uint256 amount) public {
+        transfer(recipient, amount);
+    }
 }
