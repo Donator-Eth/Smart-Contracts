@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
 contract Donator {
-    
     address private tokenAddress;
     int constant public maxEntries = 100000;
 
@@ -29,7 +28,7 @@ contract Donator {
         uint256 totalDonationsAmount;
         uint256 outstandingDonations;
         uint256 acceptedDonations;
-        address payable requestor;
+        address payable requester;
     }
 
     struct Achievement {
@@ -38,7 +37,7 @@ contract Donator {
         string title;
         string description;
         uint256 requestId;
-        address payable requestor;
+        address payable requester;
     }
 
     struct Donation {
@@ -61,7 +60,7 @@ contract Donator {
         string memory _hash,
         string memory _title,
         string memory _description
-    ) public returns(uint256){
+    ) public {
         require(bytes(_hash).length > 0);
         require(bytes(_description).length > 0);
         require(msg.sender != address(0));
@@ -84,7 +83,6 @@ contract Donator {
         // Store the id
         idsOfRequests[idsOfRequestsCount] = requestsCount;
         idsOfRequestsCount++;
-        return (idsOfRequests.length);
     }
 
     function uploadAchievement(
@@ -98,8 +96,8 @@ contract Donator {
         );
 
         require(
-            requests[_requestId].requestor == msg.sender,
-            "Only the requestor may upload Achievements to their Request."
+            requests[_requestId].requester == msg.sender,
+            "Only the requester may upload Achievements to their Request."
         );
 
         achievementsCount++;
@@ -124,7 +122,7 @@ contract Donator {
         payable
     {
         require(
-            _requestId > 0, "Invalid _requestId"
+            doesRequestExist(_requestId), "Invalid _requestId"
         );
 
         Request memory _request = requests[_requestId];
@@ -156,21 +154,21 @@ contract Donator {
 
     function receiveDonation(uint256 _donationId) public payable {
         require(
-            _donationId > 0, "Invalid _donationId"
+            doesDonationExist(_donationId), "Invalid _donationId"
         );
 
         Donation memory _donation = donations[_donationId];
         Request memory _request = requests[_donation.requestId];
-        address payable _requestor = _request.requestor;
+        address payable _requester = _request.requester;
 
-        // Ensure that the actor is the correct requestor
+        // Ensure that the actor is the correct requester
         require(
-            msg.sender == _requestor,
-            "Only the requestor may receive the Donations of their Request."
+            msg.sender == _requester,
+            "Only the requester may receive the Donations of their Request."
         );
 
         // Pay the receiver. Funds come from the smart contract.
-        payable(_request.requestor).transfer(_donation.amount);
+        payable(_request.requester).transfer(_donation.amount);
 
         // Update the fields on the Request
         _request.acceptedDonations += _donation.amount;
@@ -182,7 +180,7 @@ contract Donator {
     
     function refundDonation(uint256 _donationId) public payable {
         require(
-            _donationId > 0, "Invalid _donationId"
+            doesDonationExist(_donationId), "Invalid _donationId"
         );
         
         Donation memory _donation = donations[_donationId];
@@ -208,6 +206,10 @@ contract Donator {
     }
 
     function deleteRequest(uint256 _requestId) private {
+        require(
+            doesRequestExist(_requestId), "Invalid _requestId"
+            );
+        
         // Delete id from array
         uint256 _index = getIndexOfRequestId(_requestId);
         idsOfRequests[_index] = idsOfRequests[idsOfRequests.length - 1];
@@ -219,6 +221,10 @@ contract Donator {
     }
 
     function deleteAchievemnt(uint256 _achievementId) private {
+        require(
+             doesAchievementExist(_achievementId), "Invalid _achievementId"
+            );
+        
         // Delete id from array
         uint256 _index = getIndexOfAchievementId(_achievementId);
         idsOfAchievements[_index] = idsOfAchievements[idsOfAchievements.length - 1];
@@ -230,6 +236,10 @@ contract Donator {
     }
 
     function deleteDonation(uint256 _donationId) private {
+        require(
+            doesDonationExist(_donationId), "Invalid _donationId"
+            );
+        
         // Delete id from array
         uint256 _index = getIndexOfDonationId(_donationId);
         idsOfDonations[_index] = idsOfDonations[idsOfDonations.length - 1];
@@ -241,7 +251,7 @@ contract Donator {
     }
     
         function getIndexOfRequestId(uint256 _id) private view returns(uint256 index) {
-        for (uint256 i = 0; i < idsOfRequests.length; i++) {
+        for (uint256 i = 0; i < idsOfRequestsCount; i++) {
             if (idsOfRequests[i] == _id) {
                 return i;
             }
@@ -249,7 +259,7 @@ contract Donator {
     }
     
         function getIndexOfAchievementId(uint256 _id) private view returns(uint256 index) {
-        for (uint256 i = 0; i < idsOfAchievements.length; i++) {
+        for (uint256 i = 0; i < idsOfAchievementsCount; i++) {
             if (idsOfAchievements[i] == _id) {
                 return i;
             }
@@ -257,10 +267,37 @@ contract Donator {
     }
     
     function getIndexOfDonationId(uint256 _id) private view returns(uint256 index) {
-        for (uint256 i = 0; i < idsOfDonations.length; i++) {
+        for (uint256 i = 0; i < idsOfDonationsCount; i++) {
             if (idsOfDonations[i] == _id) {
                 return i;
             }
         }
+    }
+    
+    function doesRequestExist(uint256 _requestId) private view returns(bool exists) {
+        for (uint256 i = 0; i < idsOfRequestsCount; i++) {
+            if (idsOfRequests[i] == _requestId) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    function doesAchievementExist(uint256 _achievementId) private view returns(bool exists) {
+        for (uint256 i = 0; i < idsOfAchievementsCount; i++) {
+            if (idsOfAchievements[i] == _achievementId) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    function doesDonationExist(uint256 _donationId) private view returns(bool exists) {
+        for (uint256 i = 0; i < idsOfDonationsCount; i++) {
+            if (idsOfDonations[i] == _donationId) {
+                return true;
+            }
+        }
+        return false;
     }
 }
