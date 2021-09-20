@@ -1,6 +1,8 @@
 pragma solidity ^0.8.0;
 
 contract Donator {
+    uint256 public test;
+    
     address private tokenAddress;
     int constant public maxEntries = 100000;
 
